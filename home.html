@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>欢迎光临</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <header>
+        <nav>
+            <a href="home.html">首页</a>
+            <div id="authStatus"></div>
+        </nav>
+    </header>
+    
+    <main>
+        <h1>欢迎来到留言板</h1>
+        <div id="messageForm" class="hidden">
+            <textarea id="messageContent"></textarea>
+            <button onclick="postMessage()">发布留言</button>
+        </div>
+        <div id="messages"></div>
+    </main>
+    
+    <script src="js/script.js"></script>
+</body>
+</html>

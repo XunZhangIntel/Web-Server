@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>欢迎光临</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <header>
+        <h1>欢迎光临我们的网站！</h1>
+	<div class="auth-buttons" id="authButtons">
+	    <!--<button id="registerBtn" class="btn-secondary">注册</button>
+	    <button id="loginBtn" class="btn-primary">登录</button> -->
+	</div>
+    </header>
+
+    <!-- 登录弹窗 -->
+    <div id="loginModal" class="modal" style="display: none;">
+        <div class="modal-dialog">
+            <div class="modal-content">
+	        <div class="modal-header">
+	            <h3>用户登录</h3>
+	            <span class="close-btn">&times;</span>
+	        </div>
+	        <div class="modal-body">
+                    <form id="loginForm">
+                        <div class="form-group">
+                            <label for="username">用户名</label>
+                            <input type="text" id="username" name="username" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="password">密码</label>
+                            <input type="password" id="password" name="password" required>
+                        </div>
+			<div class="modal-footer">
+                            <button type="submit" class="btn-primary">登录</button>
+                            <div id="loginMessage" class="message"></div>
+                        </div>
+                    </form>
+		</div>
+            </div>
+        </div>
+    </div>
+
+    <main>
+        <section id="message-form">
+            <h2>留言板</h2>
+            <form id="messageForm">
+                <textarea name="content" required></textarea>
+                <button type="submit">提交留言</button>
+            </form>
+        </section>
+
+        <section id="messages">
+            <!-- 留言内容通过JavaScript加载 -->
+        </section>
+    </main>
+    <script src="js/script.js"></script>
+</body>
+</html>
