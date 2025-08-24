@@ -2,7 +2,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const loginModal = document.getElementById('loginModal');
     const closeBtn = document.querySelector('.close-btn');
     const loginForm = document.getElementById('loginForm');
-    const loginMessage = document.getElementById('loginMessage');
+    const registerForm = document.getElementById('registerForm');
+    lorMessage = document.getElementById('loginMessage');
     const contentDiv = document.getElementById('content');
     const authButtons = document.getElementById('authButtons');
     let isMouseDownInsideModal = false;
@@ -17,11 +18,11 @@ document.addEventListener('DOMContentLoaded', () => {
             const response = await fetch(url, {
                 method,
                 headers: {
-		    'Content-Type': 'application/json',
-		    'X-CSRF-Token': csrfToken
-		},
+                    'Content-Type': 'application/json',
+                    'X-CSRF-Token': csrfToken
+                },
                 body: JSON.stringify(data),
-		credentials: 'include'
+                credentials: 'include'
             });
             return await response.json();
         } catch (error) {
@@ -97,13 +98,13 @@ document.addEventListener('DOMContentLoaded', () => {
     loginForm.addEventListener('submit', async function(e) {
         e.preventDefault();
         const formData = {
-                username: document.getElementById('username').value,
-                password: document.getElementById('password').value
+                username: document.getElementById('loginUsername').value,
+                password: document.getElementById('loginPassword').value
         };
 
         // 验证用户
-	const result = await apiRequest('php/login.php', 'POST', formData);
-	console.log(result);
+        const result = await apiRequest('php/login.php', 'POST', formData);
+	    console.log(result);
         if (result.success) {
             showMessage('登录成功！', 'success');
             // 模拟登录成功后的操作
@@ -120,10 +121,33 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+    registerForm.addEventListener('submit', async function(e) {
+        e.preventDefault();
+
+        const formData = new FormData(this);
+
+        const result = await apiRequest('php/register.php', 'POST', Object.fromEntries(formData.entries()));
+        console.log(result);
+        if (result.success) {
+            showMessage(result.message, 'success');
+            setTimeout(function() {
+                loginModal.style.display = 'none';
+                resetLoginForm();
+                // 更新页面内容
+                //updateContentForLoggedInUser(username);
+                // 更改按钮状态
+                updateAuthButtons(true, formData.get('username'));
+            }, 1000);
+        } else {
+            showMessage(result.message, 'error');
+        }
+
+    });
+
     // 显示消息函数
     function showMessage(message, type) {
-        loginMessage.textContent = message;
-        loginMessage.className = 'message ' + type;
+        lorMessage.textContent = message;
+        lorMessage.className = 'message ' + type;
     }
  
     // 重置登录表单
@@ -168,9 +192,21 @@ document.addEventListener('DOMContentLoaded', () => {
             // 重新绑定事件
             document.getElementById('loginBtn').addEventListener('click', function() {
                 loginModal.style.display = 'block';
+		        document.getElementById('loginForm').style.display = 'block';
+		        document.getElementById('registerForm').style.display = 'none';
+                if(document.querySelector('.modal-header h3')?.textContent === '用户注册') {
+                    document.querySelector('.modal-header h3').textContent = '用户登录';
+                    lorMessage = document.getElementById('loginMessage'); 
+                }
             });
             document.getElementById('registerBtn').addEventListener('click', function() {
-                alert('注册功能即将推出！');
+                loginModal.style.display = 'block';
+                document.getElementById('registerForm').style.display = 'block';
+                document.getElementById('loginForm').style.display = 'none';
+                if(document.querySelector('.modal-header h3')?.textContent === '用户登录') {
+                    document.querySelector('.modal-header h3').textContent = '用户注册';
+                    lorMessage = document.getElementById('registerMessage'); 
+                }
             });
         }
     }
@@ -180,7 +216,7 @@ document.addEventListener('DOMContentLoaded', () => {
         //contentDiv.innerHTML = '<p>请登录查看个性化内容</p>';
 	apiRequest('php/logout.php', 'POST');
         updateAuthButtons(false);
-	fetchCSRFToken();
+	    fetchCSRFToken();
     }
     
     // Get CSRF Token

@@ -7,10 +7,8 @@
 </head>
 <body>
     <header>
-        <h1>欢迎光临我们的网站！</h1>
+        <h1>欢迎光临！</h1>
 	<div class="auth-buttons" id="authButtons">
-	    <!--<button id="registerBtn" class="btn-secondary">注册</button>
-	    <button id="loginBtn" class="btn-primary">登录</button> -->
 	</div>
     </header>
 
@@ -18,26 +16,49 @@
     <div id="loginModal" class="modal" style="display: none;">
         <div class="modal-dialog">
             <div class="modal-content">
-	        <div class="modal-header">
-	            <h3>用户登录</h3>
-	            <span class="close-btn">&times;</span>
-	        </div>
-	        <div class="modal-body">
+                <div class="modal-header">
+                    <h3>用户登录</h3>
+                    <span class="close-btn">&times;</span>
+                </div>
+                <div class="modal-body">
                     <form id="loginForm">
                         <div class="form-group">
                             <label for="username">用户名</label>
-                            <input type="text" id="username" name="username" required>
+                            <input type="text" id="loginUsername" name="username" required>
                         </div>
                         <div class="form-group">
                             <label for="password">密码</label>
-                            <input type="password" id="password" name="password" required>
+                            <input type="password" id="loginPassword" name="password" required>
                         </div>
-			<div class="modal-footer">
+                        <div class="modal-footer">
                             <button type="submit" class="btn-primary">登录</button>
                             <div id="loginMessage" class="message"></div>
                         </div>
                     </form>
-		</div>
+                    <form id="registerForm">
+                        <div class="form-group">
+                            <label for="username">用户名</label>
+                            <input type="text" id="registerUsername" name="username" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="email">电子邮箱</label>
+                            <input type="email" id="email" name="email" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="password">密码</label>
+                            <input type="password" id="registerPassword" name="password" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="confirm_password">确认密码</label>
+                            <input type="password" id="confirm_password" name="confirm_password" required>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="submit" class="btn-primary">注册</button>
+                            <div id="registerMessage" class="message"></div>
+                        </div>
+                    </form>
+                </div>
             </div>
         </div>
     </div>

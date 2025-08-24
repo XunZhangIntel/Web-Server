@@ -45,28 +45,22 @@ function record_login_history($user_id, $success = true) {
     ");
     $stmt->bind_param("issi", $user_id, $ip, $user_agent, $success);
     $stmt->execute();
-    $stmt->close();
 
     // 如果登录成功，更新用户表的最后登录信息
     if ($success) {
-        $stmt = $conn->prepare("
+        $stmt = $db->prepare("
             UPDATE users 
             SET last_login_ip = ?, last_login_time = NOW(), login_count = login_count + 1 
             WHERE id = ?
         ");
         $stmt->bind_param("si", $ip, $user_id);
         $stmt->execute();
-        $stmt->close();
     }
-
-    $conn->close();
 }
 
 // 获取用户登录历史
 function get_login_history($user_id, $limit = 10) {
-    $conn = db_connect();
-
-    $stmt = $conn->prepare("
+    $stmt = $db->prepare("
         SELECT login_ip, login_time, user_agent, success 
         FROM login_history 
         WHERE user_id = ? 
@@ -82,21 +76,16 @@ function get_login_history($user_id, $limit = 10) {
         $history[] = $row;
     }
 
-    $stmt->close();
-    $conn->close();
-
     return $history;
 }
 
 // 检查可疑登录（新设备/新地点）
 function check_suspicious_login($user_id) {
-    $conn = db_connect();
-
     $ip = get_client_ip();
     $user_agent = $_SERVER['HTTP_USER_AGENT'] ?? '';
 
     // 检查最近是否有相同IP的登录
-    $stmt = $conn->prepare("
+    $stmt = $db->prepare("
         SELECT COUNT(*) as count 
         FROM login_history 
         WHERE user_id = ? AND login_ip = ? AND success = 1 
@@ -106,9 +95,6 @@ function check_suspicious_login($user_id) {
     $stmt->execute();
     $result = $stmt->get_result();
     $row = $result->fetch_assoc();
-
-    $stmt->close();
-    $conn->close();
 
     return $row['count'] == 0; // 如果是新IP，返回true表示可疑
 }
@@ -134,8 +120,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if (json_last_error() !== JSON_ERROR_NONE) {
         http_response_code(400);
-	echo json_encode(['success' => false, 'message' => '无效的 JSON 数据']);
-	exit;
+	    echo json_encode(['success' => false, 'message' => '无效的 JSON 数据']);
+	    exit;
     } 
 
     $username = $data['username'] ?? '';
@@ -159,11 +145,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } elseif (!password_verify($password, $user['password'])) {
             echo json_encode(['success' => false, 'message' => '密码错误']);
         } else {
+            // Check suspicious login
+            $isSuspicious = check_suspicious_login($user['id']);
+
+            // Record login history
+            record_login_history($user['id'], true);
+
             // 登录成功，设置会话
             $_SESSION['user_id'] = $user['id'];
             $_SESSION['username'] = $user['username'];
-	    $_SESSION['login_ip'] = get_client_ip();
-	    $_SESSION['login_time'] = time();
+            $_SESSION['login_ip'] = get_client_ip();
+            $_SESSION['login_time'] = time();
             echo json_encode(['success' => true, 'message' => '登录成功']);
         }
 
