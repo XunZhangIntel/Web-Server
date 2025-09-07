@@ -1,3 +1,50 @@
+// 通用AJAX请求函数
+const apiRequest = async (url, method, data) => {
+    try {
+        let csrfToken = sessionStorage.getItem('csrf_token');
+
+        //console.log(csrfToken);
+
+        if (!csrfToken) {
+            const metaTag = document.querySelector('meta[name="csrf-token"]');
+            if (metaTag) {
+                csrfToken = metaTag.getAttribute('content');
+                sessionStorage.setItem('csrf_token', csrfToken);
+            }
+        }
+
+        const headers = {
+            'Content-Type': 'application/json',
+        };
+
+        // 4. 如果有Token才添加CSRF头（对于GET请求可能不需要）
+        if (csrfToken && method !== 'GET') {
+            headers['X-CSRF-Token'] = csrfToken;
+        }
+
+        const response = await fetch(url, {
+            method,
+            headers,
+            body: method !== 'GET' ? JSON.stringify(data) : undefined,
+            credentials: 'include'
+        });
+
+        const newCsrfToken = response.headers.get('X-CSRF-Token');
+        if (newCsrfToken) {
+            sessionStorage.setItem('csrf_token', newCsrfToken);
+            //console.log('CSRF Token已更新');
+        }
+        const result = await response.json();
+        
+        //console.log(newCsrfToken);
+
+        return result;
+    } catch (error) {
+        console.error('请求失败:', error);
+        return { success: false, message: '网络错误' };
+    }
+};
+
 document.addEventListener('DOMContentLoaded', () => {
     const loginModal = document.getElementById('loginModal');
     const closeBtn = document.querySelector('.close-btn');
@@ -11,39 +58,33 @@ document.addEventListener('DOMContentLoaded', () => {
     authButtons.innerHTML = '<div class="loading-spinner"></div>';
     authButtons.hidden = false;
 
-    // 通用AJAX请求函数
-    const apiRequest = async (url, method, data) => {
-        try {
-	    const csrfToken = sessionStorage.getItem('csrf_token');
-            const response = await fetch(url, {
-                method,
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-Token': csrfToken
-                },
-                body: JSON.stringify(data),
-                credentials: 'include'
-            });
-            return await response.json();
-        } catch (error) {
-            console.error('请求失败:', error);
-            return { success: false, message: '网络错误' };
-        }
-    };
-
-    fetchCSRFToken();
-
     // 显示留言
     const loadMessages = async () => {
-        const messages = await apiRequest('php/get_messages.php', 'GET');
+        const messages = await apiRequest('php/messagesystem/get_messages.php', 'GET');
         const container = document.getElementById('messages');
-        container.innerHTML = messages.map(msg => `
-            <div class="message">
-                <h4>${msg.username}</h4>
-                <p>${msg.content}</p>
-                <small>${new Date(msg.created_at).toLocaleString()}</small>
-            </div>
-        `).join('');
+        container.innerHTML = '';
+        // 遍历消息数组，为每条消息创建DOM元素
+        messages.forEach(msg => {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message';
+
+            const usernameH4 = document.createElement('h4');
+            usernameH4.textContent = msg.username; // 自动转义
+
+            const contentP = document.createElement('p');
+            contentP.textContent = msg.content; // 自动转义
+
+            const timeSmall = document.createElement('small');
+            timeSmall.textContent = new Date(msg.created_at).toLocaleString();
+
+            // 将元素添加到div中
+            messageDiv.appendChild(usernameH4);
+            messageDiv.appendChild(contentP);
+            messageDiv.appendChild(timeSmall);
+
+            // 将div添加到容器中
+            container.appendChild(messageDiv);
+        });
     };
 
     // 初始化主页
@@ -52,7 +93,7 @@ document.addEventListener('DOMContentLoaded', () => {
         //setInterval(loadMessages, 30000);
 
         // 检查登录状态
-        apiRequest('php/get_user.php', 'GET').then(data => {
+        apiRequest('php/utilities/get_user.php', 'GET').then(data => {
 	    updateAuthButtons(data.username ? true : false, data.username);
 	    setTimeout(() => {
                 authButtons.classList.add('visible');
@@ -103,7 +144,7 @@ document.addEventListener('DOMContentLoaded', () => {
         };
 
         // 验证用户
-        const result = await apiRequest('php/login.php', 'POST', formData);
+        const result = await apiRequest('php/loginsystem/login.php', 'POST', formData);
 	    console.log(result);
         if (result.success) {
             showMessage('登录成功！', 'success');
@@ -123,6 +164,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     registerForm.addEventListener('submit', async function(e) {
         e.preventDefault();
+        alert('注册功能敬请期待！');
+        return;
 
         const formData = new FormData(this);
 
@@ -214,9 +257,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // 退出登录
     function logout() {
         //contentDiv.innerHTML = '<p>请登录查看个性化内容</p>';
-	apiRequest('php/logout.php', 'POST');
+	    apiRequest('php/loginsystem/logout.php', 'POST');
         updateAuthButtons(false);
-	    fetchCSRFToken();
     }
     
     // Get CSRF Token

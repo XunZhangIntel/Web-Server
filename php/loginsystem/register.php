@@ -1,24 +1,12 @@
 <?php
-require_once 'csrf.php';
-require_once 'database.php';
+require_once __DIR__ . '/../config/init.php';
 
 header('Content-Type: application/json');
 
-start_session();
-
-// 获取CSRF令牌
-$headers = getallheaders();
-$csrfToken = $headers['X-CSRF-Token'] ?? '';
-
-// 验证CSRF令牌
-if (!validate_csrf_token($csrfToken)) {
-    http_response_code(403);
-    echo json_encode(['success' => false, 'message' => '无效的CSRF令牌']);
-    exit;
+$middlewareResult = $_SESSION['middleware_result'] ?? ['success' => true];
+if (!$middlewareResult['success']) {
+    echo json_encode(['success' => false, 'message' => $middlewareResult['message']]);
 }
-
-$database = Database::getInstance(DB_CONFIG);
-$db = $database->getConnection();
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $data = json_decode(file_get_contents('php://input'), true);
@@ -55,22 +43,41 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
     
     try {
+        $database = Database::getInstance(DB_CONFIG);
+        $db = $database->getConnection();
+
         // 检查用户名是否已存在
         $stmt = $db->prepare("SELECT id FROM users WHERE username = ? OR email = ?");
         $stmt->execute([$username, $email]);
-        
+
         if ($stmt->rowCount() > 0) {
             echo json_encode(['success' => false, 'message' => '用户名或电子邮件已被使用']);
             exit;
         }
-        
+
         // 哈希密码
         $hashed_password = password_hash($password, PASSWORD_DEFAULT);
-        
+
         // 插入新用户
         $stmt = $db->prepare("INSERT INTO users (username, email, password) VALUES (?, ?, ?)");
         if ($stmt->execute([$username, $email, $hashed_password])) {
-            $_SESSION['username'] = $username;
+            $tokenmidware = SessionTokenMiddleware::getInstance();
+            $tokenInfo = $tokenmidware->refreshSessionToken('register');
+
+            header('X-CSRF-Token: ' . $tokenInfo['token']);
+            header('X-CSRF-Token-ID: ' . $tokenInfo['token_id']);
+            header('X-CSRF-Token-Expires: ' . $tokenInfo['expires_in']);
+
+            // 登录成功，设置会话
+            $_SESSION['security']['session_meta']['user_id'] = $db->lastInsertId();
+            $_SESSION['security']['session_meta']['username'] = $username;
+            $_SESSION['security']['session_meta']['login_time'] = time();
+
+            $tokenmidware->regenerateSessionID();
+
+            // Record login history
+            UserIPManager::record_login_history($_SESSION['security']['session_meta']['user_id'] , true);
+
             echo json_encode(['success' => true, 'message' => '注册成功!']);
         } else {
             echo json_encode(['success' => false, 'message' => '注册失败，请稍后重试']);
@@ -81,4 +88,5 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 } else {
     echo json_encode(['success' => false, 'message' => '无效的请求方法']);
 }
+
 ?>
