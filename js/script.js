@@ -3,7 +3,7 @@ const apiRequest = async (url, method, data) => {
     try {
         let csrfToken = sessionStorage.getItem('csrf_token');
 
-        //console.log(csrfToken);
+        console.log("First", csrfToken);
 
         if (!csrfToken) {
             const metaTag = document.querySelector('meta[name="csrf-token"]');
@@ -35,8 +35,8 @@ const apiRequest = async (url, method, data) => {
             //console.log('CSRF Token已更新');
         }
         const result = await response.json();
-        
-        //console.log(newCsrfToken);
+       
+        console.log("After", newCsrfToken);
 
         return result;
     } catch (error) {
@@ -53,6 +53,10 @@ document.addEventListener('DOMContentLoaded', () => {
     lorMessage = document.getElementById('loginMessage');
     const contentDiv = document.getElementById('content');
     const authButtons = document.getElementById('authButtons');
+    const messageForm = document.getElementById('messageForm');
+    const messageRes = document.getElementById('messageRes');
+
+    messageRes.style.display = 'none';
     let isMouseDownInsideModal = false;
 
     authButtons.innerHTML = '<div class="loading-spinner"></div>';
@@ -94,8 +98,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // 检查登录状态
         apiRequest('php/utilities/get_user.php', 'GET').then(data => {
-	    updateAuthButtons(data.username ? true : false, data.username);
-	    setTimeout(() => {
+	        updateAuthButtons(data.username ? true : false, data.username);
+	        setTimeout(() => {
                 authButtons.classList.add('visible');
             }, 10);
 
@@ -187,97 +191,42 @@ document.addEventListener('DOMContentLoaded', () => {
 
     });
 
-    // 显示消息函数
-    function showMessage(message, type) {
-        lorMessage.textContent = message;
-        lorMessage.className = 'message ' + type;
-    }
- 
-    // 重置登录表单
-    function resetLoginForm() {
-        loginForm.reset();
-        loginMessage.textContent = '';
-        loginMessage.className = 'message';
-    }
- 
-    // 更新页面内容
-    function updateContentForLoggedInUser(username) {
-        contentDiv.innerHTML = `
-        <h2>欢迎回来, ${username}!</h2>
-        <p>这是您的个性化内容区域。</p>
-        <div class="user-content">
-        <p>您已成功登录系统，可以享受会员专属内容。</p>
-        <ul>
-        <li>专属优惠</li>
-        <li>会员特权</li>
-        <li>个性化推荐</li>
-        </ul>
-        </div>
-        `;
-    }
+    messageForm.addEventListener('submit', async function(e) {
+        e.preventDefault();
 
-    // 更新认证按钮状态
-    function updateAuthButtons(isLoggedIn, username = '') {
-        if (isLoggedIn) {
-            document.querySelector('.auth-buttons').innerHTML = `
-                <span>欢迎, ${username}</span>
-                <button id="logoutBtn" class="btn-secondary">退出</button>
-            `;
-            // 添加退出按钮事件
-            document.getElementById('logoutBtn').addEventListener('click', function() {
-                logout();
-            });
+        content = this.content.value;
+
+        if (content.trim() === '') {
+            alert('留言内容不能为空');
+            return;
+        }
+
+        if (content.length > 500) {
+            alert('留言内容不能超过500个字');
+            return;
+        }
+
+        const result = await apiRequest('php/messagesystem/post_message.php', 'POST', {message: content}); 
+        if (result.success) {
+            messageRes.classList.add('message', 'success');
+            messageRes.textContent = '提交成功';
+            messageRes.style.display = 'block';
+            loadMessages();
+            setTimeout(() => {
+                messageRes.style.display = 'none';
+            }, 2000);
         } else {
-            document.querySelector('.auth-buttons').innerHTML = `
-               <button id="registerBtn" class="btn-secondary">注册</button>
-               <button id="loginBtn" class="btn-primary">登录</button>
-            `;
-            // 重新绑定事件
-            document.getElementById('loginBtn').addEventListener('click', function() {
-                loginModal.style.display = 'block';
-		        document.getElementById('loginForm').style.display = 'block';
-		        document.getElementById('registerForm').style.display = 'none';
-                if(document.querySelector('.modal-header h3')?.textContent === '用户注册') {
-                    document.querySelector('.modal-header h3').textContent = '用户登录';
-                    lorMessage = document.getElementById('loginMessage'); 
-                }
-            });
-            document.getElementById('registerBtn').addEventListener('click', function() {
-                loginModal.style.display = 'block';
-                document.getElementById('registerForm').style.display = 'block';
-                document.getElementById('loginForm').style.display = 'none';
-                if(document.querySelector('.modal-header h3')?.textContent === '用户登录') {
-                    document.querySelector('.modal-header h3').textContent = '用户注册';
-                    lorMessage = document.getElementById('registerMessage'); 
-                }
-            });
+            messageRes.classList.add('message', 'error');
+            messageRes.textContent = result.message;
+            messageRes.style.display = 'block';
+            setTimeout(() => {
+                messageRes.style.display = 'none';
+            }, 2000);
         }
-    }
 
-    // 退出登录
-    function logout() {
-        //contentDiv.innerHTML = '<p>请登录查看个性化内容</p>';
-	    apiRequest('php/loginsystem/logout.php', 'POST');
-        updateAuthButtons(false);
-    }
-    
-    // Get CSRF Token
-    async function fetchCSRFToken() {
-        try {
-            const result = await apiRequest('php/csrf.php', 'GET');
-            console.log(result);
-            if (result.success) {
-	        sessionStorage.setItem('csrf_token', result.token);
-                return result.token;
-            } else {
-                throw new Error('无法获取CSRF令牌');
-            }
-        } catch (error) {
-            console.error('获取CSRF令牌失败', error);
-            throw error;
-        }
-    }
-
+        this.content.value = '';
+        this.content.focus();
+    });
 });
 
 // 新增主页功能
@@ -299,7 +248,9 @@ function loadMessages() {
 }
 
 function postMessage() {
-    const content = document.getElementById('messageContent').value;
+    const content = document.getElementById('messageForm').value;
+    console.log(content);
+    return;
     if (!content.trim()) return;
 
     fetch('php/post_message.php', {
@@ -318,9 +269,79 @@ function postMessage() {
     });
 }
 
-function showMessage(text, isSuccess) {
-    const msgDiv = document.getElementById('message');
-    msgDiv.textContent = text;
-    msgDiv.className = isSuccess ? 'success' : 'error';
-    setTimeout(() => msgDiv.textContent = '', 3000);
+// 显示消息函数
+function showMessage(message, type) {
+    const lorMessage = document.getElementById('loginMessage');
+    lorMessage.textContent = message;
+    lorMessage.className = 'message ' + type;
+    setTimeout(() => lorMessage.textContent = '', 3000);
+}
+
+// 重置登录表单
+function resetLoginForm() {
+    const loginForm = document.getElementById('loginForm');
+    loginForm.reset();
+    loginMessage.textContent = '';
+    loginMessage.className = 'message';
+}
+
+// 更新页面内容
+function updateContentForLoggedInUser(username) {
+    contentDiv.innerHTML = `
+    <h2>欢迎回来, ${username}!</h2>
+    <p>这是您的个性化内容区域。</p>
+    <div class="user-content">
+    <p>您已成功登录系统，可以享受会员专属内容。</p>
+    <ul>
+    <li>专属优惠</li>
+    <li>会员特权</li>
+    <li>个性化推荐</li>
+    </ul>
+    </div>
+    `;
+}
+
+// 更新认证按钮状态
+function updateAuthButtons(isLoggedIn, username = '') {
+    if (isLoggedIn) {
+        document.querySelector('.auth-buttons').innerHTML = `
+            <span>欢迎, ${username}</span>
+            <button id="logoutBtn" class="btn-secondary">退出</button>
+        `;
+        // 添加退出按钮事件
+        document.getElementById('logoutBtn').addEventListener('click', function() {
+            logout();
+        });
+    } else {
+        document.querySelector('.auth-buttons').innerHTML = `
+           <button id="registerBtn" class="btn-secondary">注册</button>
+           <button id="loginBtn" class="btn-primary">登录</button>
+        `;
+        // 重新绑定事件
+        document.getElementById('loginBtn').addEventListener('click', function() {
+            loginModal.style.display = 'block';
+            document.getElementById('loginForm').style.display = 'block';
+            document.getElementById('registerForm').style.display = 'none';
+            if(document.querySelector('.modal-header h3')?.textContent === '用户注册') {
+                document.querySelector('.modal-header h3').textContent = '用户登录';
+                lorMessage = document.getElementById('loginMessage');
+            }
+        });
+        document.getElementById('registerBtn').addEventListener('click', function() {
+            loginModal.style.display = 'block';
+            document.getElementById('registerForm').style.display = 'block';
+            document.getElementById('loginForm').style.display = 'none';
+            if(document.querySelector('.modal-header h3')?.textContent === '用户登录') {
+                document.querySelector('.modal-header h3').textContent = '用户注册';
+                lorMessage = document.getElementById('registerMessage');
+            }
+        });
+    }
+}
+
+// 退出登录
+function logout() {
+    //contentDiv.innerHTML = '<p>请登录查看个性化内容</p>';
+    apiRequest('php/loginsystem/logout.php', 'POST');
+    updateAuthButtons(false);
 }

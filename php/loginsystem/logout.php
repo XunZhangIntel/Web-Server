@@ -25,6 +25,8 @@ if (ini_get("session.use_cookies")) {
 $tokenmidware = SessionTokenMiddleware::getInstance();
 $tokenmidware->regenerateSessionID();
 
+$tokenInfo = $tokenmidware->refreshSessionToken('logout');
+
 echo json_encode([
     'success' => true,
     'message' => '已成功登出'

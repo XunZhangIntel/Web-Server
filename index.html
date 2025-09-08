@@ -67,10 +67,14 @@
         <section id="message-form">
             <h2>留言板</h2>
             <form id="messageForm">
-                <textarea name="content" required></textarea>
+                <textarea name="content" required placeholder="请输入您的留言..."></textarea>
                 <button type="submit">提交留言</button>
+                <button type="button" onclick="clearForm()">清除内容</button>
             </form>
         </section>
+
+        <div id="messageRes">
+        </div>
 
         <section id="messages">
             <!-- 留言内容通过JavaScript加载 -->

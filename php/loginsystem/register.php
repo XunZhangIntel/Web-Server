@@ -64,10 +64,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $tokenmidware = SessionTokenMiddleware::getInstance();
             $tokenInfo = $tokenmidware->refreshSessionToken('register');
 
-            header('X-CSRF-Token: ' . $tokenInfo['token']);
-            header('X-CSRF-Token-ID: ' . $tokenInfo['token_id']);
-            header('X-CSRF-Token-Expires: ' . $tokenInfo['expires_in']);
-
             // 登录成功，设置会话
             $_SESSION['security']['session_meta']['user_id'] = $db->lastInsertId();
             $_SESSION['security']['session_meta']['username'] = $username;

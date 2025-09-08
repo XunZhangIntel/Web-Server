@@ -48,10 +48,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $tokenmidware = SessionTokenMiddleware::getInstance();
             $tokenInfo = $tokenmidware->refreshSessionToken('login');
 
-            header('X-CSRF-Token: ' . $tokenInfo['token']);
-            header('X-CSRF-Token-ID: ' . $tokenInfo['token_id']);
-            header('X-CSRF-Token-Expires: ' . $tokenInfo['expires_in']);
-
             // Record login history
             UserIPManager::record_login_history($user['id'], true);
 

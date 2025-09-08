@@ -50,7 +50,13 @@ class SessionTokenMiddleware {
     }
 
     public function refreshSessionToken($reason) {
-        return $this->tokenManager->refreshSessionToken($reason);
+        $tokenInfo = $this->tokenManager->refreshSessionToken($reason);
+
+        header('X-CSRF-Token: ' . $tokenInfo['token']);
+        header('X-CSRF-Token-ID: ' . $tokenInfo['token_id']);
+        header('X-CSRF-Token-Expires: ' . $tokenInfo['expires_in']);
+
+        return;
     }
 
     public function regenerateSessionID() {
